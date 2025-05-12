@@ -7,8 +7,9 @@ from sentence_transformers import SentenceTransformer, util
 from sklearn.metrics.pairwise import cosine_similarity
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
-from geopy.exc import GeocoderTimedOut
+from geopy.exc import GeocoderTimedOut, GeocoderUnavailable
 from functools import lru_cache
+import time
 
 # Load jobs data
 jobs_df = pd.read_csv("jobs.csv")
@@ -29,20 +30,20 @@ cache = diskcache.Cache('cache')
 geolocator = Nominatim(user_agent="job_recommender_app")
 
 def get_coordinates(location):
-    # First check if the location is in the cache
-    if location in cache:
-        return cache[location]
-    
-    # If not in the cache, make a geocoding request
-    location_info = geolocator.geocode(location)
-    
-    if location_info:
-        coords = (location_info.latitude, location_info.longitude)
-        # Cache the result for future use
-        cache[location] = coords
-        return coords
-    else:
-        return (0.0, 0.0)  # default/fallback if location not found
+    retries = 5  # Set retry attempts
+    for attempt in range(retries):
+        try:
+            location_info = geolocator.geocode(location)
+            if location_info:
+                return (location_info.latitude, location_info.longitude)
+            else:
+                return (0.0, 0.0)  # fallback if location not found
+        except GeocoderUnavailable:
+            # If geocoding service is unavailable, wait and retry
+            print(f"Geocoding service is unavailable. Retrying... Attempt {attempt + 1}/{retries}")
+            time.sleep(2 ** attempt)  # Exponential backoff: 1, 2, 4, 8, etc.
+    # If after retries it still fails, return default coordinates
+    return (0.0, 0.0)
         
 # Precompute coordinates for unique locations
 unique_locations = set(jobs_df['State'].unique()).union(set(['Your User Location']))  # Include user location here
