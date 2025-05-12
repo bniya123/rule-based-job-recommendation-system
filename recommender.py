@@ -1,5 +1,5 @@
 # recommender.py
-
+import diskcache
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
@@ -22,19 +22,27 @@ job_embeddings = model.encode(jobs_df['Job type'].tolist(), convert_to_tensor=Tr
 salary_scaler = MinMaxScaler()
 jobs_df['salary_scaled'] = salary_scaler.fit_transform(jobs_df[['avg_salary']])
 
+# Set up the cache (cache will be stored in the 'cache' folder)
+cache = diskcache.Cache('cache')
+
 # Location
 geolocator = Nominatim(user_agent="job_recommender_app")
 
-@lru_cache(maxsize=None)
 def get_coordinates(location):
-    try:
-        location_info = geolocator.geocode(location)
-        if location_info:
-            return location_info.latitude, location_info.longitude
-        else:
-            return None
-    except GeocoderTimedOut:
-        return get_coordinates(location)
+    # First check if the location is in the cache
+    if location in cache:
+        return cache[location]
+    
+    # If not in the cache, make a geocoding request
+    location_info = geolocator.geocode(location)
+    
+    if location_info:
+        coords = (location_info.latitude, location_info.longitude)
+        # Cache the result for future use
+        cache[location] = coords
+        return coords
+    else:
+        return (0.0, 0.0)  # default/fallback if location not found
         
 # Precompute coordinates for unique locations
 unique_locations = set(jobs_df['State'].unique()).union(set(['Your User Location']))  # Include user location here
