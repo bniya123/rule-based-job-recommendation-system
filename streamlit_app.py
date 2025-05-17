@@ -44,14 +44,14 @@ if not st.session_state.authenticated:
         st.success("OTP sent! Use 123456 for demo.")
 
     if 'generated_otp' in st.session_state:
-    entered_otp = st.text_input("Enter OTP", key="entered_otp")
-    if st.button("Verify OTP"):
-        if entered_otp == st.session_state.generated_otp:
-            st.session_state.authenticated = True
-            st.success("Logged in successfully!")
-            st.experimental_rerun()
-        else:
-            st.error("Incorrect OTP")
+        entered_otp = st.text_input("Enter OTP", key="entered_otp")
+        if st.button("Verify OTP"):
+            if entered_otp == st.session_state.generated_otp:
+                st.session_state.authenticated = True
+                st.success("Logged in successfully!")
+                st.experimental_rerun()
+            else:
+                st.error("Incorrect OTP")
 
 # Main app UI
 if st.session_state.authenticated:
