@@ -127,46 +127,46 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
         recommendations_display = st.session_state.recommendations[['Company', 'Job type', 'State', 'match_score']].sort_values(by="match_score", ascending=False)
 
         for index, row in recommendations_display.iterrows():
-    job_key = f"{row['Company']}_{index}"
-    expanded = st.session_state.get('clicked_job') == job_key
-
-    with st.expander(f"📌 {row['Company']}", expanded=expanded):
-        st.write(f"**Job Type**: {row['Job type']}")
-        st.write(f"**Location**: {row['State']}")
-        st.write(f"**Match Score**: {row['match_score']}")
-
-        if st.button(f"I'm interested in {row['Company']}", key=f"button_{job_key}"):
-            st.session_state.clicked_job = job_key  # 🔁 Track which job was clicked
-
-            # Log interaction
-            interaction_data = {
-                "Timestamp": st.session_state.user_data['timestamp'],
-                "Session ID": st.session_state.user_data['session_id'],
-                "Name": st.session_state.user_data['name'],
-                "Age": st.session_state.user_data['age'],
-                "Location": st.session_state.user_data['location'],
-                "Skills": st.session_state.user_data['skills'],
-                "Expected Salary": st.session_state.user_data['salary'],
-                "Top N": st.session_state.user_data['top_n'],
-                "Jobs Recommended": "|".join(st.session_state.recommendations["Company"].astype(str).tolist()),
-                "Jobs Clicked": row['Company'],
-                "Match Scores": "|".join(st.session_state.recommendations["match_score"].astype(str).tolist()),
-            }
-
-            # Save to CSV
-            if os.path.exists(INTERACTION_LOG):
-                df_log = pd.read_csv(INTERACTION_LOG)
-                df_log = pd.concat([df_log, pd.DataFrame([interaction_data])], ignore_index=True)
-            else:
-                df_log = pd.DataFrame([interaction_data])
-
-            df_log.to_csv(INTERACTION_LOG, index=False)
-            st.session_state['interaction_trigger'] = st.session_state.get('interaction_trigger', 0) + 1
-            st.rerun()  # 🔄 Trigger page refresh after saving
-
-        # After rerun, show success if this was the clicked job
-        if st.session_state.get('clicked_job') == job_key:
-            st.success(f"Your interest in {row['Company']} has been logged!")
-
+            job_key = f"{row['Company']}_{index}"
+            expanded = st.session_state.get('clicked_job') == job_key
+        
+            with st.expander(f"📌 {row['Company']}", expanded=expanded):
+                st.write(f"**Job Type**: {row['Job type']}")
+                st.write(f"**Location**: {row['State']}")
+                st.write(f"**Match Score**: {row['match_score']}")
+        
+                if st.button(f"I'm interested in {row['Company']}", key=f"button_{job_key}"):
+                    st.session_state.clicked_job = job_key  # 🔁 Track which job was clicked
+        
+                    # Log interaction
+                    interaction_data = {
+                        "Timestamp": st.session_state.user_data['timestamp'],
+                        "Session ID": st.session_state.user_data['session_id'],
+                        "Name": st.session_state.user_data['name'],
+                        "Age": st.session_state.user_data['age'],
+                        "Location": st.session_state.user_data['location'],
+                        "Skills": st.session_state.user_data['skills'],
+                        "Expected Salary": st.session_state.user_data['salary'],
+                        "Top N": st.session_state.user_data['top_n'],
+                        "Jobs Recommended": "|".join(st.session_state.recommendations["Company"].astype(str).tolist()),
+                        "Jobs Clicked": row['Company'],
+                        "Match Scores": "|".join(st.session_state.recommendations["match_score"].astype(str).tolist()),
+                    }
+        
+                    # Save to CSV
+                    if os.path.exists(INTERACTION_LOG):
+                        df_log = pd.read_csv(INTERACTION_LOG)
+                        df_log = pd.concat([df_log, pd.DataFrame([interaction_data])], ignore_index=True)
+                    else:
+                        df_log = pd.DataFrame([interaction_data])
+        
+                    df_log.to_csv(INTERACTION_LOG, index=False)
+                    st.session_state['interaction_trigger'] = st.session_state.get('interaction_trigger', 0) + 1
+                    st.rerun()  # 🔄 Trigger page refresh after saving
+        
+                # After rerun, show success if this was the clicked job
+                if st.session_state.get('clicked_job') == job_key:
+                    st.success(f"Your interest in {row['Company']} has been logged!")
+        
     elif st.session_state.recommendations is not None and st.session_state.recommendations.empty:
-    st.warning("⚠️ No jobs found matching your profile.")
+        st.warning("⚠️ No jobs found matching your profile.")
