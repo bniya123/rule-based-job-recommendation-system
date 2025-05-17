@@ -39,6 +39,11 @@ if 'user_data' not in st.session_state:
 if not st.session_state.authenticated:
     st.title("🔐 Login")
     phone_number = st.text_input("Enter your phone number")
+
+    # Validate phone number length
+    if phone_number and (not phone_number.isdigit() or len(phone_number) != 10):
+        st.error("Please enter a valid 10-digit phone number.")
+    
     if st.button("Send OTP"):
         st.session_state.generated_otp = "123456"
         st.success("OTP sent! Use 123456 for demo.")
@@ -49,12 +54,12 @@ if not st.session_state.authenticated:
             if entered_otp == st.session_state.generated_otp:
                 st.session_state.authenticated = True
                 st.success("Logged in successfully!")
-                st.experimental_rerun()
+                st.session_state['login_trigger'] = st.session_state.get('login_trigger', 0) + 1
             else:
                 st.error("Incorrect OTP")
 
 # Main app UI
-if st.session_state.authenticated:
+if st.session_state.get('authenticated', False):
     st.title("🧠 AI Job Recommender")
 
     # User input form
@@ -129,7 +134,8 @@ if st.session_state.authenticated:
                     df_log.to_csv(INTERACTION_LOG, index=False)
                     st.success(f"Your interest in {row['Company']} has been logged!")
                     time.sleep(1)
-                    st.experimental_rerun()
+                    st.session_state['interaction_trigger'] = st.session_state.get('interaction_trigger', 0) + 1
+
 
     elif st.session_state.recommendations is not None:
         st.warning("No jobs found matching your profile.")
