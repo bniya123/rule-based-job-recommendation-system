@@ -43,14 +43,14 @@ if not st.session_state.authenticated:
         st.success("OTP sent! Use 123456 for demo.")
 
     if 'generated_otp' in st.session_state:
-        entered_otp = st.text_input("Enter OTP")
-        if st.button("Verify OTP"):
-            if entered_otp == st.session_state.generated_otp:
-                st.session_state.authenticated = True
-                st.success("Logged in successfully!")
-                st.experimental_rerun()
-            else:
-                st.error("Incorrect OTP")
+    entered_otp = st.text_input("Enter OTP", key="entered_otp")
+    if st.button("Verify OTP"):
+        if entered_otp == st.session_state.generated_otp:
+            st.session_state.authenticated = True
+            st.success("Logged in successfully!")
+            st.experimental_rerun()
+        else:
+            st.error("Incorrect OTP")
 
 # Main app UI
 if st.session_state.authenticated:
@@ -127,9 +127,8 @@ if st.session_state.authenticated:
 
                     df_log.to_csv(INTERACTION_LOG, index=False)
                     st.success(f"Your interest in {row['Company']} has been logged!")
-                    time.sleep(5)
-                    st.session_state["rerun_trigger"] = st.session_state.get("rerun_trigger", 0) + 1
-                    st.query_params.update({"trigger": st.session_state["rerun_trigger"]})
+                    time.sleep(1)
+                    st.experimental_rerun()
 
     elif st.session_state.recommendations is not None:
         st.warning("No jobs found matching your profile.")
