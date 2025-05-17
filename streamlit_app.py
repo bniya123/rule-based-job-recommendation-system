@@ -6,6 +6,19 @@ from datetime import datetime
 import uuid
 from recommender import recommend_jobs
 
+# Load jobs data and extract skills
+JOBS_DATA_PATH = "jobs.csv"  # Update with the correct path
+jobs_df = pd.read_csv(JOBS_DATA_PATH)
+
+# Extract unique skills from jobs data
+def extract_unique_skills(jobs_df, skill_column="Skills"):
+    all_skills = []
+    for skill_list in jobs_df[skill_column].dropna():
+        all_skills.extend([skill.strip() for skill in skill_list.split(',')])
+    return sorted(set(all_skills))
+
+available_skills = extract_unique_skills(jobs_df)
+
 # Full CSV file path for interaction logs
 INTERACTION_LOG = "C:/Users/fatim/ISB/Terms Resources/Capstone Project/job-recommender-streamlit/user_interactions.csv"
 
@@ -34,7 +47,7 @@ with st.form("user_input_form"):
     name = st.text_input("Name")
     age = st.number_input("Age", min_value=18, max_value=70, value=25)
     location = st.selectbox("Select Your Location (State)", indian_states)
-    skills = st.text_area("Skills (comma separated)")
+    skills_selected = st.multiselect("Select Your Skills", options=available_skills)
     salary = st.number_input("Expected Monthly Salary (INR)", min_value=0)
     top_n = st.slider("Number of Job Recommendations", 1, 10, 3)
     submitted = st.form_submit_button("Get Recommendations")
@@ -47,7 +60,7 @@ if submitted:
         "name": name,
         "age": age,
         "location": location,
-        "skills": skills,
+        "skills": ", ".join(skills_selected),
         "salary": salary,
         "top_n": top_n,
         "session_id": session_id,
@@ -58,7 +71,7 @@ if submitted:
         user_name=name,
         user_age=age,
         user_location=location,
-        user_skills=skills,
+        user_skills=", ".join(skills_selected),
         expected_salary=salary,
         top_n=top_n
     )
