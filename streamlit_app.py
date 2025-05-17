@@ -63,7 +63,7 @@ if st.session_state.page == 'login':
                 st.session_state.authenticated = True
                 st.session_state.page = 'main'  # Switch to main app page
                 st.session_state.login_trigger += 1
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Incorrect OTP")
 
@@ -78,7 +78,7 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
         st.session_state.generated_otp = None
         st.session_state.recommendations = None
         st.session_state.user_data = {}
-        st.experimental_rerun()
+        st.rerun()
 
     # User input form
     with st.form("user_input_form"):
