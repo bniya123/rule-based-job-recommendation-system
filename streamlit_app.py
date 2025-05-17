@@ -127,8 +127,8 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
         recommendations_display = st.session_state.recommendations[['Company', 'Job type', 'State', 'match_score']].sort_values(by="match_score", ascending=False)
 
         for index, row in recommendations_display.iterrows():
-            expander_key = f"expander_{index}"
-            is_open = st.session_state.get("last_clicked_job") == index
+            job_key = f"expander_{index}"
+            is_open = st.session_state.get("last_clicked_job") == job_key
         
             with st.expander(f"📌 {row['Company']}", expanded=is_open):
                 st.write(f"**Job Type**: {row['Job type']}")
@@ -136,7 +136,7 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
                 st.write(f"**Match Score**: {row['match_score']}")
         
                 if st.button(f"I'm interested in {row['Company']}", key=f"button_{job_key}"):
-                    st.session_state["last_clicked_job"] = index  # 🔁 Track which job was clicked
+                    st.session_state["last_clicked_job"] = job_key  # 🔁 Track which job was clicked
         
                     # Log interaction
                     interaction_data = {
