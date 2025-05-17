@@ -11,7 +11,7 @@ JOBS_DATA_PATH = "jobs.csv"  # Update with the correct path
 jobs_df = pd.read_csv(JOBS_DATA_PATH)
 
 # Extract unique skills from jobs data
-def extract_unique_skills(jobs_df, skill_column="Skills"):
+def extract_unique_skills(jobs_df, skill_column="Job type"):
     all_skills = []
     for skill_list in jobs_df[skill_column].dropna():
         all_skills.extend([skill.strip() for skill in skill_list.split(',')])
