@@ -8,16 +8,13 @@ from recommender import recommend_jobs
 
 # Full CSV file path for interaction logs
 # need to set up google api - usign google console to store interaction data on google sheets
-INTERACTION_LOG = "user_interactions.csv"
+INTERACTION_LOG = "/tmp/user_interactions.csv"
 
 # Load jobs data
 jobs_df = pd.read_csv("jobs.csv")
 
 # Extract unique job types (skills) from 'Job type' column
 available_skills = sorted(jobs_df["Job type"].dropna().unique().tolist())
-
-# Ensure the directory for CSV exists
-os.makedirs(os.path.dirname(INTERACTION_LOG), exist_ok=True)
 
 # List of all Indian states
 indian_states = [
