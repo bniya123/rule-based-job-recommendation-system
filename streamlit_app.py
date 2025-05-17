@@ -12,12 +12,15 @@ jobs_df = pd.read_csv(JOBS_DATA_PATH)
 
 # Extract unique skills from jobs data
 def extract_unique_skills(jobs_df, skill_column="Job type"):
+    if skill_column not in jobs_df.columns:
+        st.warning(f"⚠️ Column '{skill_column}' not found. Available columns: {jobs_df.columns.tolist()}")
+        return []
     all_skills = []
     for skill_list in jobs_df[skill_column].dropna():
         all_skills.extend([skill.strip() for skill in skill_list.split(',')])
     return sorted(set(all_skills))
 
-available_skills = extract_unique_skills(jobs_df)
+available_skills = extract_unique_skills(jobs_df, skill_column="Job type")
 
 # Full CSV file path for interaction logs
 INTERACTION_LOG = "C:/Users/fatim/ISB/Terms Resources/Capstone Project/job-recommender-streamlit/user_interactions.csv"
