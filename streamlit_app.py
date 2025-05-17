@@ -7,6 +7,7 @@ import uuid
 from recommender import recommend_jobs
 
 # Full CSV file path for interaction logs
+# need to set up google api - usign google console to store interaction data on google sheets
 INTERACTION_LOG = "C:/Users/fatim/ISB/Terms Resources/Capstone Project/job-recommender-streamlit/user_interactions.csv"
 
 # Load jobs data
