@@ -136,7 +136,8 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
                 st.write(f"**Match Score**: {row['match_score']}")
         
                 if st.button(f"I'm interested in {row['Company']}", key=f"button_{job_key}"):
-                    st.session_state["last_clicked_job"] = job_key  # 🔁 Track which job was clicked
+                    st.session_state["last_clicked_job"] = job_key
+                    st.session_state["clicked_job"] = job_key  #
         
                     # Log interaction
                     interaction_data = {
