@@ -144,4 +144,4 @@ def recommend_unsupervised(
     return recommended[[
         'Company', 'Job type', 'State', 'job_description',
         'Expected Salary Range', 'Distance_km', 'Final_Score', 'Explanation'
-    ]].rename(columns={'Distance_km': 'Distance (km)', 'Final_Score': 'Match Score'})
+    ]].rename(columns={'Distance_km': 'Distance (km)', 'Final_Score': 'match_score'})
