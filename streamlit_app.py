@@ -82,7 +82,7 @@ if st.session_state.page == 'login':
             st.session_state.user_role = "admin"
             st.session_state.page = "admin_view"  # Redirect to admin view page
             st.success("Admin access granted.")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Access denied. Please use a valid innodatatics.com email.")
 
