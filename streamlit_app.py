@@ -71,17 +71,17 @@ if st.session_state.page == 'login':
 st.markdown("---")
 
 # --- Admin Access via Email ---
-    st.subheader("Admin Access")
-    admin_email = st.text_input("Enter your work email", key="admin_email_input")
-    if st.button("Admin Access"):
-        if admin_email.lower().endswith("@innodatatics.com"):
-            st.session_state.authenticated = True
-            st.session_state.user_role = "admin"
-            st.session_state.page = "admin_dashboard"
-            st.success("Admin access granted.")
-            st.rerun()
-        else:
-            st.error("Access denied. Please use a valid innodatatics.com email.")
+st.subheader("Admin Access")
+admin_email = st.text_input("Enter your work email", key="admin_email_input")
+if st.button("Admin Access"):
+    if admin_email.lower().endswith("@innodatatics.com"):
+        st.session_state.authenticated = True
+        st.session_state.user_role = "admin"
+        st.session_state.page = "admin_dashboard"
+        st.success("Admin access granted.")
+        st.rerun()
+    else:
+        st.error("Access denied. Please use a valid innodatatics.com email.")
 
 # -------------- MAIN APP PAGE --------------
 elif st.session_state.page == 'main' and st.session_state.authenticated:
