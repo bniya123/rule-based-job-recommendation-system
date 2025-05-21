@@ -45,50 +45,46 @@ if 'user_role' not in st.session_state:
 
 # -------------- LOGIN PAGE --------------
 if st.session_state.page == 'login':
+    # Regular user login form
     st.title("🔐 Login")
+    phone_number = st.text_input("Enter your phone number")
 
-    tab1, tab2 = st.tabs(["User Login", "Admin Login"])
+    # Validate phone number length and digits
+    if phone_number and (not phone_number.isdigit() or len(phone_number) != 10):
+        st.error("Please enter a valid 10-digit phone number.")
 
-    with tab1:
-        phone_number = st.text_input("Enter your phone number")
+    valid_phone = phone_number.isdigit() and len(phone_number) == 10
+    send_otp_button = st.button("Send OTP", disabled=not valid_phone)
 
-        # Validate phone number length and digits
-        if phone_number and (not phone_number.isdigit() or len(phone_number) != 10):
-            st.error("Please enter a valid 10-digit phone number.")
+    if send_otp_button:
+        st.session_state.generated_otp = "123456"
+        st.success("OTP sent! Use 123456 for demo.")
 
-        valid_phone = phone_number.isdigit() and len(phone_number) == 10
-        send_otp_button = st.button("Send OTP", disabled=not valid_phone)
-
-        if send_otp_button:
-            st.session_state.generated_otp = "123456"
-            st.success("OTP sent! Use 123456 for demo.")
-
-        if st.session_state.generated_otp:
-            entered_otp = st.text_input("Enter OTP", key="entered_otp")
-            if st.button("Verify OTP"):
-                if entered_otp == st.session_state.generated_otp:
-                    st.session_state.authenticated = True
-                    st.session_state.user_role = "user"
-                    st.session_state.page = 'main'  # Switch to main app page
-                    st.session_state.login_trigger += 1
-                    st.experimental_rerun()
-                else:
-                    st.error("Incorrect OTP")
-
-    with tab2:
-        st.subheader("Admin Access")
-        admin_email = st.text_input("Enter your work email", key="admin_email_input")
-        if st.button("Admin Access"):
-            if admin_email.lower().endswith("@innodatatics.com"):
+    if st.session_state.generated_otp:
+        entered_otp = st.text_input("Enter OTP", key="entered_otp")
+        if st.button("Verify OTP"):
+            if entered_otp == st.session_state.generated_otp:
                 st.session_state.authenticated = True
-                st.session_state.user_role = "admin"
-                st.session_state.page = "admin_view"  # Redirect to admin view page
-                st.success("Admin access granted.")
+                st.session_state.user_role = "user"
+                st.session_state.page = 'main'  # Switch to main app page
+                st.session_state.login_trigger += 1
                 st.experimental_rerun()
             else:
-                st.error("Access denied. Please use a valid innodatatics.com email.")
+                st.error("Incorrect OTP")
+                
+    st.markdown("---")
 
-st.markdown("---")
+    st.subheader("Admin Access")
+    admin_email = st.text_input("Enter your work email", key="admin_email_input")
+    if st.button("Admin Access"):
+        if admin_email.lower().endswith("@innodatatics.com"):
+            st.session_state.authenticated = True
+            st.session_state.user_role = "admin"
+            st.session_state.page = "admin_view"  # Redirect to admin view page
+            st.success("Admin access granted.")
+            st.experimental_rerun()
+        else:
+            st.error("Access denied. Please use a valid innodatatics.com email.")
 
 # -------------- MAIN APP PAGE --------------
 elif st.session_state.page == 'main' and st.session_state.authenticated:
