@@ -68,7 +68,7 @@ if st.session_state.page == 'login':
                 st.session_state.user_role = "user"
                 st.session_state.page = 'main'  # Switch to main app page
                 st.session_state.login_trigger += 1
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Incorrect OTP")
                 
