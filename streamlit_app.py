@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 import uuid
 from recommender import recommend_jobs
+from unsupervised_recommender import recommend_unsupervised
 
 # Full CSV file path for interaction logs
 # need to set up google api - usign google console to store interaction data on google sheets
@@ -87,20 +88,21 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
         location = st.selectbox("Select Your Location (State)", indian_states)
         skills = st.multiselect("Select Skills (Job Types)", available_skills)
         salary = st.number_input("Expected Monthly Salary (INR)", min_value=0)
-        top_n = st.slider("Number of Job Recommendations", 1, 10, 3)
+        model_choice = st.selectbox("Choose Recommendation Model", ["Rule-Based", "Unsupervised"])
+        top_n = st.slider("Number of Job Recommendations", 1, 20, 3)
         submitted = st.form_submit_button("Get Recommendations")
 
     # Handle recommendation generation with basic validation
     if submitted:
         if not name.strip():
             st.error("Please enter your name.")
-        elif not skills:
+        elif not skills or len(skills) == 0:
             st.error("Please select at least one skill.")
         else:
             with st.spinner('Generating recommendations...'):
                 session_id = str(uuid.uuid4())
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                skills_str = ", ".join(skills)
+                skills_str = ", ".join(skills) if isinstance(skills, list) else skills
                 st.session_state.user_data = {
                     "name": name,
                     "age": age,
@@ -112,16 +114,24 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
                     "timestamp": timestamp
                 }
 
-                st.session_state.recommendations = recommend_jobs(
-                    user_name=name,
-                    user_age=age,
-                    user_location=location,
-                    user_skills=skills_str,
-                    expected_salary=salary,
-                    top_n=top_n
-                )
-
-    # Display recommendations if available
+                if model_choice == "Rule-Based":
+                    st.session_state.recommendations = recommend_jobs(
+                        user_name=name,
+                        user_age=age,
+                        user_location=location,
+                        user_skills=skills,
+                        expected_salary=salary,
+                        top_n=top_n
+                    )
+                else:
+                    st.session_state.recommendations = recommend_unsupervised(
+                        user_location=location,
+                        user_skills=skills,
+                        top_n=top_n
+                    )
+                
+                
+                    # Display recommendations if available
     if st.session_state.recommendations is not None and not st.session_state.recommendations.empty:
         st.write(f"🔍 Recommendations for **{st.session_state.user_data['name']}**:")
         recommendations_display = st.session_state.recommendations[['Company', 'Job type', 'State', 'match_score']].sort_values(by="match_score", ascending=False)
