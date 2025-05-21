@@ -119,14 +119,15 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
                         user_name=name,
                         user_age=age,
                         user_location=location,
-                        user_skills=skills,
+                        user_skills=skills_str,
                         expected_salary=salary,
                         top_n=top_n
                     )
                 else:
                     st.session_state.recommendations = recommend_unsupervised(
-                        user_location=location,
-                        user_skills=skills,
+                        skills=skills_str,  # Convert list to comma-separated string
+                        location=location,
+                        expected_monthly_salary=salary,
                         top_n=top_n
                     )
                 
