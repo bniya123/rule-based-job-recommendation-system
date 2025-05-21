@@ -209,7 +209,7 @@ elif st.session_state.page == "admin_view" and st.session_state.authenticated an
         st.session_state.authenticated = False
         st.session_state.page = 'login'
         st.session_state.user_role = 'user'
-        st.experimental_rerun()
+        st.rerun()
 
     selected_action = st.radio("Choose an action:", [
         "View Dashboard",
