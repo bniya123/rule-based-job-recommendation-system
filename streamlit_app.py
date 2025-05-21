@@ -40,48 +40,55 @@ if 'interaction_trigger' not in st.session_state:
     st.session_state.interaction_trigger = 0
 if 'generated_otp' not in st.session_state:
     st.session_state.generated_otp = None
+if 'user_role' not in st.session_state:
+    st.session_state.user_role = 'user'  # default role
 
 # -------------- LOGIN PAGE --------------
 if st.session_state.page == 'login':
     st.title("🔐 Login")
-    phone_number = st.text_input("Enter your phone number")
 
-    # Validate phone number length and digits
-    if phone_number and (not phone_number.isdigit() or len(phone_number) != 10):
-        st.error("Please enter a valid 10-digit phone number.")
+    tab1, tab2 = st.tabs(["User Login", "Admin Login"])
 
-    valid_phone = phone_number.isdigit() and len(phone_number) == 10
-    send_otp_button = st.button("Send OTP", disabled=not valid_phone)
+    with tab1:
+        phone_number = st.text_input("Enter your phone number")
 
-    if send_otp_button:
-        st.session_state.generated_otp = "123456"
-        st.success("OTP sent! Use 123456 for demo.")
+        # Validate phone number length and digits
+        if phone_number and (not phone_number.isdigit() or len(phone_number) != 10):
+            st.error("Please enter a valid 10-digit phone number.")
 
-    if st.session_state.generated_otp:
-        entered_otp = st.text_input("Enter OTP", key="entered_otp")
-        if st.button("Verify OTP"):
-            if entered_otp == st.session_state.generated_otp:
+        valid_phone = phone_number.isdigit() and len(phone_number) == 10
+        send_otp_button = st.button("Send OTP", disabled=not valid_phone)
+
+        if send_otp_button:
+            st.session_state.generated_otp = "123456"
+            st.success("OTP sent! Use 123456 for demo.")
+
+        if st.session_state.generated_otp:
+            entered_otp = st.text_input("Enter OTP", key="entered_otp")
+            if st.button("Verify OTP"):
+                if entered_otp == st.session_state.generated_otp:
+                    st.session_state.authenticated = True
+                    st.session_state.user_role = "user"
+                    st.session_state.page = 'main'  # Switch to main app page
+                    st.session_state.login_trigger += 1
+                    st.experimental_rerun()
+                else:
+                    st.error("Incorrect OTP")
+
+    with tab2:
+        st.subheader("Admin Access")
+        admin_email = st.text_input("Enter your work email", key="admin_email_input")
+        if st.button("Admin Access"):
+            if admin_email.lower().endswith("@innodatatics.com"):
                 st.session_state.authenticated = True
-                st.session_state.page = 'main'  # Switch to main app page
-                st.session_state.login_trigger += 1
-                st.rerun()
+                st.session_state.user_role = "admin"
+                st.session_state.page = "admin_view"  # Redirect to admin view page
+                st.success("Admin access granted.")
+                st.experimental_rerun()
             else:
-                st.error("Incorrect OTP")
-                
-st.markdown("---")
+                st.error("Access denied. Please use a valid innodatatics.com email.")
 
-# --- Admin Access via Email ---
-st.subheader("Admin Access")
-admin_email = st.text_input("Enter your work email", key="admin_email_input")
-if st.button("Admin Access"):
-    if admin_email.lower().endswith("@innodatatics.com"):
-        st.session_state.authenticated = True
-        st.session_state.user_role = "admin"
-        st.session_state.page = "admin_dashboard"
-        st.success("Admin access granted.")
-        st.rerun()
-    else:
-        st.error("Access denied. Please use a valid innodatatics.com email.")
+st.markdown("---")
 
 # -------------- MAIN APP PAGE --------------
 elif st.session_state.page == 'main' and st.session_state.authenticated:
@@ -147,7 +154,7 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
                     )
                 
                 
-                    # Display recommendations if available
+    # Display recommendations if available
     if st.session_state.recommendations is not None and not st.session_state.recommendations.empty:
         st.write(f"🔍 Recommendations for **{st.session_state.user_data['name']}**:")
         recommendations_display = st.session_state.recommendations[['Company', 'Job type', 'State', 'match_score']].sort_values(by="match_score", ascending=False)
@@ -197,3 +204,47 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
         
     elif st.session_state.recommendations is not None and st.session_state.recommendations.empty:
         st.warning("⚠️ No jobs found matching your profile.")
+
+# ----------- ADMIN VIEW PAGE -----------
+elif st.session_state.page == "admin_view" and st.session_state.authenticated and st.session_state.user_role == "admin":
+    st.title("🛠 Admin View")
+
+    if st.button("Logout"):
+        st.session_state.authenticated = False
+        st.session_state.page = 'login'
+        st.session_state.user_role = 'user'
+        st.experimental_rerun()
+
+    selected_action = st.radio("Choose an action:", [
+        "View Dashboard",
+        "Download Interaction Data",
+        "Append to jobs.csv"
+    ])
+
+    if selected_action == "View Dashboard":
+        st.info("📊 Show some Streamlit charts or tables here.")
+
+    elif selected_action == "Download Interaction Data":
+        if os.path.exists(INTERACTION_LOG):
+            interaction_df = pd.read_csv(INTERACTION_LOG)
+            csv = interaction_df.to_csv(index=False).encode("utf-8")
+            st.download_button("Download Interaction CSV", csv, "interactions.csv", "text/csv")
+        else:
+            st.warning("No interaction data found.")
+
+    elif selected_action == "Append to jobs.csv":
+        st.info("📥 Add your job appending logic here.")
+        new_job = st.text_area("Paste new job data (CSV format)")
+        if st.button("Append Job"):
+            if new_job:
+                try:
+                    from io import StringIO
+                    new_df = pd.read_csv(StringIO(new_job))
+                    existing_df = pd.read_csv("jobs.csv")
+                    combined = pd.concat([existing_df, new_df], ignore_index=True)
+                    combined.to_csv("jobs.csv", index=False)
+                    st.success("New job(s) added successfully.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            else:
+                st.warning("Please enter job data first.")
