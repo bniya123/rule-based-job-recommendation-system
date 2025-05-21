@@ -39,8 +39,8 @@ def recommend_unsupervised(
 
     # Preprocessing
     jobs['Job type'] = jobs['Job type'].fillna('').astype(str)
-    jobs['JD'] = jobs['JD'].fillna('').astype(str)
-    jobs['job_text'] = (jobs['Job type'] + " " + jobs['JD']).astype(str)
+    jobs['job_description'] = jobs['job_description'].fillna('').astype(str)
+    jobs['job_text'] = (jobs['Job type'] + " " + jobs['job_description']).astype(str)
 
     # Convert salary columns to numeric
     jobs['Min salary'] = pd.to_numeric(jobs.get('Min salary', 0), errors='coerce').fillna(0)
@@ -142,5 +142,5 @@ def recommend_unsupervised(
 
     # Select relevant columns for output
     return recommended[[
-        'Job type', 'JD', 'Expected Salary Range', 'Distance_km', 'Final_Score', 'Explanation'
+        'Job type', 'job_description', 'Expected Salary Range', 'Distance_km', 'Final_Score', 'Explanation'
     ]].rename(columns={'Distance_km': 'Distance (km)', 'Final_Score': 'Match Score'})
