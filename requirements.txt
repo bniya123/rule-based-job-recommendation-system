@@ -6,3 +6,4 @@ sentence-transformers
 geopy
 tabulate
 diskcache
+openai
