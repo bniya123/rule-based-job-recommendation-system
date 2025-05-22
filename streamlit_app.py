@@ -7,6 +7,27 @@ import uuid
 from recommender import recommend_jobs
 from unsupervised_recommender import recommend_unsupervised
 
+# 🔧 Set constant layout and page width for all pages
+st.set_page_config(
+    page_title="Job Recommender System",
+    layout="centered",  # Use "wide" if you want full screen width
+    initial_sidebar_state="auto"
+)
+
+# Optional: CSS for fixed width and spacing
+st.markdown("""
+    <style>
+        .main {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Full CSV file path for interaction logs
 # need to set up google api - usign google console to store interaction data on google sheets
 INTERACTION_LOG = "/tmp/user_interactions.csv"
