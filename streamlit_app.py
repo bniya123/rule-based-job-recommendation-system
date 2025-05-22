@@ -53,9 +53,10 @@ if st.session_state.page == 'login':
         st.error("Please enter a valid 10-digit phone number.")
 
     name_input = st.text_input("Enter your name")
-
+    
     valid_phone = phone_number.isdigit() and len(phone_number) == 10
-    send_otp_button = st.button("Send OTP", disabled=not valid_phone)
+    valid_name = bool(name_input.strip())  # True if name is not empty or whitespace only
+    send_otp_button = st.button("Send OTP", disabled=not (valid_phone and valid_name))
 
     if send_otp_button:
         st.session_state.generated_otp = "123456"
