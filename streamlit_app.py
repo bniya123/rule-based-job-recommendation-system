@@ -7,6 +7,7 @@ import uuid
 from recommender import recommend_jobs
 from unsupervised_recommender import recommend_unsupervised
 
+
 # 🔧 Set constant layout and page width for all pages
 st.set_page_config(
     page_title="Job Recommender System",
@@ -308,8 +309,11 @@ elif st.session_state.page == "admin_view" and st.session_state.authenticated an
         "Append to jobs.csv"
     ])
 
-    if selected_action == "View Dashboard":
-        st.info("📊 Show some Streamlit charts or tables here.")
+    elif selected_action == "View Dashboard":
+    try:
+        exec(open("dashboard10.py").read())
+    except Exception as e:
+        st.error(f"Failed to load dashboard: {e}")
 
     elif selected_action == "Download Interaction Data":
         if os.path.exists(INTERACTION_LOG):
