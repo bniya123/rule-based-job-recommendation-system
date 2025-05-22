@@ -233,7 +233,6 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
 
 # ---------- PAGE: CHATBOT ----------
 elif st.session_state.page == 'chatbot':
-    st.set_page_config(page_title="InnoDatatics Chat", layout="wide")
     st.title("💬 InnoDatatics Chat")
 
     if st.button("🔙 Back to Recommender"):
