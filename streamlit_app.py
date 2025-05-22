@@ -47,15 +47,19 @@ if st.session_state.page == 'login':
     # Regular user login form
     st.title("🔐 Login")
     phone_number = st.text_input("Enter your phone number")
+    name_input = st.text_input("Enter your name")
+
+    valid_phone = False
 
     # Validate phone number length and digits
-    if phone_number and (not phone_number.isdigit() or len(phone_number) != 10):
-        st.error("Please enter a valid 10-digit phone number.")
+    if phone_number:
+        if not phone_number.isdigit() or len(phone_number) != 10:
+            st.error("Please enter a valid 10-digit phone number.")
+        else:
+            valid_phone = True
 
-    name_input = st.text_input("Enter your name")
-    
-    valid_phone = phone_number.isdigit() and len(phone_number) == 10
-    valid_name = bool(name_input.strip())  # True if name is not empty or whitespace only
+    valid_name = bool(name_input and name_input.strip())  # True if name is not empty or whitespace only
+
     send_otp_button = st.button("Send OTP", disabled=not (valid_phone and valid_name))
 
     if send_otp_button:
