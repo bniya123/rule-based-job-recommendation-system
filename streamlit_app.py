@@ -309,7 +309,7 @@ elif st.session_state.page == "admin_view" and st.session_state.authenticated an
         "Append to jobs.csv"
     ])
 
-    elif selected_action == "View Dashboard":
+    if selected_action == "View Dashboard":
     try:
         exec(open("dashboard10.py").read())
     except Exception as e:
