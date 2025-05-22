@@ -310,10 +310,10 @@ elif st.session_state.page == "admin_view" and st.session_state.authenticated an
     ])
 
     if selected_action == "View Dashboard":
-    try:
-        exec(open("dashboard10.py").read())
-    except Exception as e:
-        st.error(f"Failed to load dashboard: {e}")
+        try:
+            exec(open("dashboard10.py").read())
+        except Exception as e:
+            st.error(f"Failed to load dashboard: {e}")
 
     elif selected_action == "Download Interaction Data":
         if os.path.exists(INTERACTION_LOG):
