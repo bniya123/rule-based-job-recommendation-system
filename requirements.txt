@@ -7,3 +7,8 @@ geopy
 tabulate
 diskcache
 openai
+plotly
+json
+requests
+base64
+geopandas
