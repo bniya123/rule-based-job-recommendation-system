@@ -25,23 +25,22 @@ indian_states = [
     'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Lakshadweep', 'Delhi', 'Puducherry'
 ]
 
-# Initialize session state variables
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-if 'page' not in st.session_state:
-    st.session_state.page = 'login'
-if 'login_trigger' not in st.session_state:
-    st.session_state.login_trigger = 0
-if 'user_data' not in st.session_state:
-    st.session_state.user_data = {}
-if 'recommendations' not in st.session_state:
-    st.session_state.recommendations = None
-if 'interaction_trigger' not in st.session_state:
-    st.session_state.interaction_trigger = 0
-if 'generated_otp' not in st.session_state:
-    st.session_state.generated_otp = None
-if 'user_role' not in st.session_state:
-    st.session_state.user_role = 'user'  # default role
+# Initialize session variables
+for key, value in {
+    'authenticated': False,
+    'page': 'login',
+    'login_trigger': 0,
+    'user_data': {},
+    'recommendations': None,
+    'interaction_trigger': 0,
+    'generated_otp': None,
+    'user_role': 'user',
+    'messages': [],               # for chatbot history
+    'session_id': str(uuid.uuid4())  # for logging user sessions
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
+
 
 # -------------- LOGIN PAGE --------------
 if st.session_state.page == 'login':
@@ -58,6 +57,7 @@ if st.session_state.page == 'login':
 
     if send_otp_button:
         st.session_state.generated_otp = "123456"
+        st.session_state.user_data["name"] = name_input.strip()
         st.success("OTP sent! Use 123456 for demo.")
 
     if st.session_state.generated_otp:
@@ -84,25 +84,26 @@ if st.session_state.page == 'login':
             st.success("Admin access granted.")
             st.rerun()
         else:
-            st.error("Access denied. Please use a valid innodatatics.com email.")
+            st.error("Access denied. Please use a valid email.")
 
 # -------------- MAIN APP PAGE --------------
 elif st.session_state.page == 'main' and st.session_state.authenticated:
     st.title("🧠 AI Job Recommender")
 
-    # Logout button
     if st.button("Logout"):
-        st.session_state.authenticated = False
+        for key in ['authenticated', 'generated_otp', 'recommendations', 'user_data']:
+            st.session_state[key] = False if isinstance(st.session_state[key], bool) else {}
         st.session_state.page = 'login'
-        st.session_state.generated_otp = None
-        st.session_state.recommendations = None
-        st.session_state.user_data = {}
+        st.rerun()
+
+    if st.button("Chatbot Help"):
+        st.session_state.page = "chatbot"
         st.rerun()
 
     # User input form
     with st.form("user_input_form"):
-        name = st.text_input("Name")
-        age = st.number_input("Age", min_value=18, max_value=70, value=25)
+        name = st.text_input("Name", value=st.session_state.user_data.get("name", ""))
+        age = st.number_input("Age", min_value=18, max_value=90, value=30)
         location = st.selectbox("Select Your Location (State)", indian_states)
         skills = st.multiselect("Select Skills (Job Types)", available_skills)
         salary = st.number_input("Expected Monthly Salary (INR)", min_value=0)
@@ -201,6 +202,69 @@ elif st.session_state.page == 'main' and st.session_state.authenticated:
     elif st.session_state.recommendations is not None and st.session_state.recommendations.empty:
         st.warning("⚠️ No jobs found matching your profile.")
 
+
+# ---------- PAGE: CHATBOT ----------
+elif st.session_state.page == 'chatbot':
+    st.set_page_config(page_title="InnoDatatics Chat", layout="wide")
+    st.title("💬 InnoDatatics Chat")
+
+    if st.button("🔙 Back to Recommender"):
+        st.session_state.page = 'main'
+        st.rerun()
+
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Chatbot Logic
+    def get_chatbot_response(user_message):
+        try:
+            question_lower = user_message.lower()
+
+            if "how does" in question_lower and "work" in question_lower:
+                return "This platform recommends jobs based on your skills, location, and salary using a combination of ML models and semantic similarity."
+
+            elif "recommendation" in question_lower:
+                return "Job recommendations are personalized suggestions based on your profile inputs."
+
+            elif "how do i" in question_lower and ("apply" in question_lower or "save" in question_lower):
+                return "Currently, you can express interest in a job, which we log. External application links will be integrated in the future."
+
+            elif "who built" in question_lower or "developer" in question_lower:
+                return "This platform was developed by a data science enthusiast to streamline job discovery using AI."
+
+            # Fallback to GPT-4 via OpenAI
+            import openai
+            openai.api_key = st.secrets["OPENAI_API_KEY"]
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant for a job recommendation platform."},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.7,
+                max_tokens=300
+            )
+            return response["choices"][0]["message"]["content"]
+
+        except Exception as e:
+            return f"⚠️ I'm having trouble responding right now. (Error: {e})"
+
+    # Show previous messages
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Handle new user input
+    if prompt := st.chat_input("Type your message…"):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+
+        with st.chat_message("assistant"):
+            with st.spinner("Thinking..."):
+                response = get_chatbot_response(prompt)
+            st.markdown(response)
+            st.session_state.messages.append({"role": "assistant", "content": response})
+            
+
 # ----------- ADMIN VIEW PAGE -----------
 elif st.session_state.page == "admin_view" and st.session_state.authenticated and st.session_state.user_role == "admin":
     st.title("🛠 Admin View")
@@ -244,3 +308,4 @@ elif st.session_state.page == "admin_view" and st.session_state.authenticated an
                     st.error(f"Error: {e}")
             else:
                 st.warning("Please enter job data first.")
+                
