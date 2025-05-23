@@ -994,7 +994,7 @@ CACHE_FILE        = Path("location_cache.csv")
 PCA_COMPONENTS    = 50
 
 # Load static data
-jobs_df = pd.read_csv("C://Users//Tanmay//Downloads//jobs.csv")
+jobs_df = pd.read_csv("jobs.csv")
 available_skills = sorted(jobs_df["Job type"].dropna().unique().tolist())
 indian_states = [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
