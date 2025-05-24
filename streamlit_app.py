@@ -985,7 +985,7 @@ import openai
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
-openai_api_key = st.secrets["OPENAI_API_KEY"]
+openai.api_key = st.secrets["OPENAI_API_KEY"]
 
 # --- Constants ---
 INTERACTION_LOG   = "/tmp/user_interactions.csv"
