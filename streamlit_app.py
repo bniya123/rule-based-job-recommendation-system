@@ -1275,7 +1275,7 @@ elif st.session_state.page == 'admin_view' and st.session_state.authenticated:
         st.rerun()
 
     action = st.radio("Choose action:", ["View Dashboard", "Download Interaction Data", "Append to jobs.csv"])
-    if selected_action == "View Dashboard":
+    if action == "View Dashboard":
         try:
             exec(open("dashboard10.py").read())
         except Exception as e:
