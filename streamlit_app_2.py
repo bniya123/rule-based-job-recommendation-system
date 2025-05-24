@@ -987,14 +987,14 @@ warnings.filterwarnings("ignore")
 
 # --- Constants ---
 INTERACTION_LOG   = "/tmp/user_interactions.csv"
-BASE_API_URL      = "http://127.0.0.1:7860"
-FLOW_ID           = "1a520f57-f6b0-46b3-aa50-9041f4d83e60"
+BASE_API_URL      = "http://52.205.254.228:7860"
+FLOW_ID           = "6fdd59ed-0109-491b-8576-3bf4932add58"
 GEOCODE_API_KEY   = "e16212d2c51a4da288bf22c3dced407d"
 CACHE_FILE        = Path("location_cache.csv")
 PCA_COMPONENTS    = 50
 
 # Load static data
-jobs_df = pd.read_csv("C://Users//Tanmay//Downloads//jobs.csv")
+jobs_df = pd.read_csv("jobs.csv")
 available_skills = sorted(jobs_df["Job type"].dropna().unique().tolist())
 indian_states = [
     'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa',
@@ -1033,10 +1033,10 @@ def run_flow(user_message, session_id, user_name, tweaks=None, api_key=None):
         "tweaks": tweaks or {}
     }
     payload["tweaks"].update({
-        "ChatInput-voquK": {"session_id": session_id},
-        "TextInput-s26mJ": {"input_value": user_name},
-        "Memory-rRETL": {"session_id": session_id},
-        "ChatOutput-GFauW": {"session_id": session_id}
+        "ChatInput-aAzUo": {"session_id": session_id},
+        "TextInput-LnzCN": {"input_value": user_name},
+        "Memory-YVR39": {"session_id": session_id},
+        "ChatOutput-8QykV": {"session_id": session_id}
     })
     headers = {"x-api-key": api_key} if api_key else {}
     response = requests.post(api_url, json=payload, headers=headers)
@@ -1222,7 +1222,7 @@ elif st.session_state.page == 'unsupervised':
     if run_btn:
         # Load & preprocess
         df_uns = pd.read_excel(
-            "C://Users//Tanmay//Downloads//Data_Innodatatics1-Data_Innodatatics1.xlsx.xlsx",
+            "Data_Innodatatics1-Data_Innodatatics1.xlsx.xlsx",
             engine="openpyxl"
         )
         df_uns["Avg_salary"] = (df_uns["Min salary"] + df_uns["Max salary"]) / 2
