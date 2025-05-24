@@ -1221,8 +1221,8 @@ elif st.session_state.page == 'unsupervised':
 
     if run_btn:
         # Load & preprocess
-        df_uns = pd.read_excel(
-            "Data_Innodatatics1-Data_Innodatatics1.xlsx.xlsx",
+        df_uns = pd.read_csv(
+            "Data_Innodatatics1 - Data_Innodatatics1.csv",
             engine="openpyxl"
         )
         df_uns["Avg_salary"] = (df_uns["Min salary"] + df_uns["Max salary"]) / 2
