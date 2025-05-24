@@ -499,6 +499,7 @@
 # #     if selected_action == "View Dashboard":
 # #         st.info("📊 Show some Streamlit charts or tables here.")
 
+
 # #     elif selected_action == "Download Interaction Data":
 # #         if os.path.exists(INTERACTION_LOG):
 # #             interaction_df = pd.read_csv(INTERACTION_LOG)
@@ -1274,8 +1275,12 @@ elif st.session_state.page == 'admin_view' and st.session_state.authenticated:
         st.rerun()
 
     action = st.radio("Choose action:", ["View Dashboard", "Download Interaction Data", "Append to jobs.csv"])
-    if action == "View Dashboard":
-        st.info("📊 Admin dashboard goes here.")
+    if selected_action == "View Dashboard":
+        try:
+            exec(open("dashboard10.py").read())
+        except Exception as e:
+            st.error(f"Failed to load dashboard: {e}")
+          
     elif action == "Download Interaction Data":
         if os.path.exists(INTERACTION_LOG):
             df_log = pd.read_csv(INTERACTION_LOG)
