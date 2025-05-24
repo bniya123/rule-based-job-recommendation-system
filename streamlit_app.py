@@ -1,5 +1,3 @@
-import openai
-openai_api_key = st.secrets["OPENAI_API_KEY"]
 # # # import streamlit as st
 # # # import pandas as pd
 # # # import os
@@ -982,9 +980,12 @@ from geopy.geocoders import OpenCage
 from geopy.extra.rate_limiter import RateLimiter
 from typing import Optional, Tuple
 from recommender import recommend_jobs  # Rule-based model
+import openai
+
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
+openai_api_key = st.secrets["OPENAI_API_KEY"]
 
 # --- Constants ---
 INTERACTION_LOG   = "/tmp/user_interactions.csv"
