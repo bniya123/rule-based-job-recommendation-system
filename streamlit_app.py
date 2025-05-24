@@ -1207,61 +1207,67 @@ elif st.session_state.page == 'chatbot':
             st.session_state.messages.append({"role":"assistant","content":reply})
 
 # --- PAGE: UNSUPERVISED ---
-elif st.session_state.page == 'unsupervised':
+elif st.session_state.page == "unsupervised":
     st.title("🤖 Unsupervised Job Recommendation")
-    if st.button("🔙 Back to Recommender"):
-        st.session_state.page = 'main'
-        st.rerun()
-
-    # Sidebar inputs for unsupervised
+    if st.button("🔙 Back"):
+        st.session_state.page = "main"; st.rerun()
+ 
+    # Sidebar for unsupervised inputs
     st.sidebar.header("Worker Profile")
-    w_name   = st.sidebar.text_input("Name", "John Doe")
-    w_city   = st.sidebar.text_input("City", "Mumbai")
-    w_skills = st.sidebar.text_input("Skills (comma-separated)", "Plumber")
-    w_salary = st.sidebar.number_input("Monthly Wage (₹)", min_value=0, value=30000)
-    top_n    = st.sidebar.slider("Top N Recommendations", 1, 20, 5)
-    run_btn  = st.sidebar.button("Recommend Jobs")
-
+    w_nm    = st.sidebar.text_input("Name", "John Doe")
+    w_city  = st.sidebar.text_input("City", "Mumbai")
+    w_skill = st.sidebar.text_input("Skills (comma-separated)", "Plumber")
+    w_sal   = st.sidebar.number_input("Monthly Wage (₹)", 0, value=30000)
+    top_n   = st.sidebar.slider("Top N", 1, 20, 5)
+    run_btn = st.sidebar.button("Run Unsupervised")
+ 
     if run_btn:
-        # Load & preprocess
-        df_uns = pd.read_csv(
-            "Data_Innodatatics1 - Data_Innodatatics1.csv",
-            engine="openpyxl"
-        )
-        df_uns["Avg_salary"] = (df_uns["Min salary"] + df_uns["Max salary"]) / 2
-        mean_sal = df_uns.loc[df_uns["Avg_salary"] != 0, "Avg_salary"].mean()
-        df_uns["Avg_salary"] = df_uns["Avg_salary"].replace(0, mean_sal)
-        df_uns["job_text"] = (
-            df_uns["Job type"] + " role in " + df_uns["State"] +
-            ". Average salary: ₹" + df_uns["Avg_salary"].astype(int).astype(str)
-        )
-
-        # Geocode & embed
-        cache = load_location_cache()
-        df_uns["coords"] = df_uns["State"].apply(lambda s: get_coordinates(s, cache))
-        model = init_model()
-        job_emb = model.encode(df_uns["job_text"].tolist(), show_progress_bar=False)
-
-        # Worker embedding
-        skill_texts = [f"{sk.strip()} seeking role in {w_city}" for sk in w_skills.split(",")]
-        w_emb = model.encode(skill_texts, show_progress_bar=False).mean(axis=0).reshape(1, -1)
-
-        # Similarity + filter
-        sims = cosine_similarity(w_emb, job_emb).flatten()
-        df_uns["similarity"] = sims
-        df_filt = df_uns[(df_uns["Min salary"] <= w_salary) & (df_uns["Max salary"] >= w_salary)].copy()
-
-        # Distance + scoring
-        user_coord = get_coordinates(w_city, cache)
-        df_filt["distance"] = df_filt["coords"].apply(lambda c: geodesic(c, user_coord).km if c and user_coord else np.inf)
-        arr = np.array([[s, d] for s, d in zip(df_filt["similarity"], df_filt["distance"])])
-        norm_sim  = MinMaxScaler().fit_transform(arr[:, 0].reshape(-1, 1))
-        norm_dist = MinMaxScaler().fit_transform(arr[:, 1].reshape(-1, 1))
-        df_filt["score"] = (0.7 * norm_sim - 0.3 * norm_dist).flatten()
-
-        # Show top-N
-        top_df = df_filt.sort_values("score", ascending=False).head(top_n)
-        st.dataframe(top_df[["Company", "Job type", "State", "Avg_salary", "score"]])
+        # Prep text
+        df_uns = jobs_df.copy()
+        df_uns["Avg_salary"] = (df_uns["Min salary"] + df_uns["Max salary"])/2
+        mean_sal = df_uns.loc[df_uns["Avg_salary"]!=0,"Avg_salary"].mean()
+        df_uns["Avg_salary"].replace(0, mean_sal, inplace=True)
+        df_uns["job_text"] = (df_uns["Job type"] + " role in " + df_uns["State"]
+                              + ". Avg ₹" + df_uns["Avg_salary"].astype(int).astype(str))
+ 
+        # Embedding + PCA
+        mdl   = init_model()
+        emb   = mdl.encode(df_uns["job_text"].tolist(), show_progress_bar=False)
+        scaler= MinMaxScaler().fit(emb)
+        emb_s = scaler.transform(emb)
+        pca  = PCA(n_components=PCA_COMPONENTS, random_state=42)
+        job_pca = pca.fit_transform(emb_s)
+ 
+        # Cluster
+        best_name, labels = run_tuned_clustering(job_pca)
+        df_uns["cluster"] = labels
+        st.success(f"Best algorithm: {best_name}")
+ 
+        # Worker embed + transform
+        skill_texts = [f"{sk.strip()} seeking role in {w_city}" for sk in w_skill.split(",")]
+        skill_emb   = mdl.encode(skill_texts, show_progress_bar=False)
+        emb_w_s     = scaler.transform(skill_emb)
+        w_pca_full  = pca.transform(emb_w_s)
+        w_pca       = w_pca_full.mean(axis=0).reshape(1,-1)
+ 
+        # Assign to cluster by nearest job
+        dists      = np.linalg.norm(job_pca - w_pca, axis=1)
+        worker_cl  = int(df_uns.loc[dists.argmin(),"cluster"])
+        st.write(f"Worker assigned to cluster **{worker_cl}**")
+ 
+        # Compute semantic similarity
+        worker_emb = skill_emb.mean(axis=0).reshape(1,-1)
+        sims       = cosine_similarity(worker_emb, emb).flatten()
+        df_uns["sim"] = sims
+ 
+        # Show top-N in that cluster
+        subset = df_uns[df_uns["cluster"]==worker_cl]
+        top_jobs = subset.nlargest(top_n, "sim")
+        st.subheader(f"Top {top_n} jobs in cluster {worker_cl}")
+        for _, row in top_jobs.iterrows():
+            st.markdown(f"**{row['Company']}**  \n"
+                        f"{row['Job type']} — {row['State']}  \n"
+                        f"Similarity: {row['sim']:.2f}")
 
 # --- PAGE: ADMIN VIEW ---
 elif st.session_state.page == 'admin_view' and st.session_state.authenticated:
