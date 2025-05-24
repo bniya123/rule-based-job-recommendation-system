@@ -1,4 +1,5 @@
-
+import openai
+openai_api_key = st.secrets["OPENAI_API_KEY"]
 # # # import streamlit as st
 # # # import pandas as pd
 # # # import os
