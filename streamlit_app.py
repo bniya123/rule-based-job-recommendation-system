@@ -982,7 +982,18 @@ from geopy.extra.rate_limiter import RateLimiter
 from typing import Optional, Tuple
 from recommender import recommend_jobs  # Rule-based model
 import openai
-
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.cluster import (
+    KMeans, DBSCAN, MeanShift, OPTICS, SpectralClustering,
+    AgglomerativeClustering, Birch, AffinityPropagation
+)
+from sklearn.mixture import GaussianMixture
+from sklearn.metrics import silhouette_score, davies_bouldin_score
+import hdbscan
+import pickle
+from pathlib import Path
 
 # Suppress warnings
 warnings.filterwarnings("ignore")
@@ -995,6 +1006,31 @@ FLOW_ID           = "6fdd59ed-0109-491b-8576-3bf4932add58"
 GEOCODE_API_KEY   = "e16212d2c51a4da288bf22c3dced407d"
 CACHE_FILE        = Path("location_cache.csv")
 PCA_COMPONENTS    = 50
+tuned_algorithms = {
+    "KMeans": KMeans(n_clusters=N_CLUSTERS, random_state=42),
+    "DBSCAN": DBSCAN(eps=1.0, min_samples=4),
+    "HDBSCAN": hdbscan.HDBSCAN(min_cluster_size=15, min_samples=7),
+    "Agglomerative": AgglomerativeClustering(n_clusters=N_CLUSTERS),
+    "GMM": GaussianMixture(n_components=N_CLUSTERS, random_state=42),
+    "Birch": Birch(n_clusters=N_CLUSTERS),
+    "MeanShift": MeanShift(bandwidth=2.0),
+    "OPTICS": OPTICS(min_samples=5, xi=0.05),
+    "Spectral": SpectralClustering(n_clusters=N_CLUSTERS, affinity="nearest_neighbors"),
+    "AffinityProp": AffinityPropagation(damping=0.9, preference=-50),
+}
+
+def run_tuned_clustering(job_pca: np.ndarray):
+    results = []
+    for name, model in tuned_algorithms.items():
+        labels = model.fit_predict(job_pca) if hasattr(model, "fit_predict") else model.fit(job_pca).predict(job_pca)
+        if len(set(labels)) <= 1:
+            results.append((name, -1.0, np.inf, labels))
+        else:
+            sil = silhouette_score(job_pca, labels)
+            db = davies_bouldin_score(job_pca, labels)
+            results.append((name, sil, db, labels))
+    best = max(results, key=lambda x: x[1])
+    return best[0], best[3]
 
 # Load static data
 jobs_df = pd.read_csv("jobs.csv")
@@ -1207,67 +1243,144 @@ elif st.session_state.page == 'chatbot':
             st.session_state.messages.append({"role":"assistant","content":reply})
 
 # --- PAGE: UNSUPERVISED ---
-elif st.session_state.page == "unsupervised":
+
+# elif st.session_state.page == "unsupervised":
+#     st.title("🤖 Unsupervised Job Recommendation")
+#     if st.button("🔙 Back"):
+#         st.session_state.page = "main"; st.rerun()
+ 
+#     # Sidebar for unsupervised inputs
+#     st.sidebar.header("Worker Profile")
+#     w_nm    = st.sidebar.text_input("Name", "John Doe")
+#     w_city  = st.sidebar.text_input("City", "Mumbai")
+#     w_skill = st.sidebar.text_input("Skills (comma-separated)", "Plumber")
+#     w_sal   = st.sidebar.number_input("Monthly Wage (₹)", 0, value=30000)
+#     top_n   = st.sidebar.slider("Top N", 1, 20, 5)
+#     run_btn = st.sidebar.button("Run Unsupervised")
+ 
+#     if run_btn:
+#         # Prep text
+#         df_uns = jobs_df.copy()
+#         df_uns["Avg_salary"] = (df_uns["Min salary"] + df_uns["Max salary"])/2
+#         mean_sal = df_uns.loc[df_uns["Avg_salary"]!=0,"Avg_salary"].mean()
+#         df_uns["Avg_salary"].replace(0, mean_sal, inplace=True)
+#         df_uns["job_text"] = (df_uns["Job type"] + " role in " + df_uns["State"]
+#                               + ". Avg ₹" + df_uns["Avg_salary"].astype(int).astype(str))
+ 
+#         # Embedding + PCA
+#         mdl   = init_model()
+#         emb   = mdl.encode(df_uns["job_text"].tolist(), show_progress_bar=False)
+#         scaler= MinMaxScaler().fit(emb)
+#         emb_s = scaler.transform(emb)
+#         pca  = PCA(n_components=PCA_COMPONENTS, random_state=42)
+#         job_pca = pca.fit_transform(emb_s)
+ 
+#         # Cluster
+#         best_name, labels = run_tuned_clustering(job_pca)
+#         df_uns["cluster"] = labels
+#         st.success(f"Best algorithm: {best_name}")
+ 
+#         # Worker embed + transform
+#         skill_texts = [f"{sk.strip()} seeking role in {w_city}" for sk in w_skill.split(",")]
+#         skill_emb   = mdl.encode(skill_texts, show_progress_bar=False)
+#         emb_w_s     = scaler.transform(skill_emb)
+#         w_pca_full  = pca.transform(emb_w_s)
+#         w_pca       = w_pca_full.mean(axis=0).reshape(1,-1)
+ 
+#         # Assign to cluster by nearest job
+#         dists      = np.linalg.norm(job_pca - w_pca, axis=1)
+#         worker_cl  = int(df_uns.loc[dists.argmin(),"cluster"])
+#         st.write(f"Worker assigned to cluster **{worker_cl}**")
+ 
+#         # Compute semantic similarity
+#         worker_emb = skill_emb.mean(axis=0).reshape(1,-1)
+#         sims       = cosine_similarity(worker_emb, emb).flatten()
+#         df_uns["sim"] = sims
+ 
+#         # Show top-N in that cluster
+#         subset = df_uns[df_uns["cluster"]==worker_cl]
+#         top_jobs = subset.nlargest(top_n, "sim")
+#         st.subheader(f"Top {top_n} jobs in cluster {worker_cl}")
+#         for _, row in top_jobs.iterrows():
+#             st.markdown(f"**{row['Company']}**  \n"
+#                         f"{row['Job type']} — {row['State']}  \n"
+#                         f"Similarity: {row['sim']:.2f}")
+
+elif st.session_state.page == 'unsupervised':
+
+ 
+    # Define and ensure model directory exists
+    PCA_MODEL_PATH = Path("models/pca_model.pkl")
+    CLUSTER_MODEL_PATH = Path("models/cluster_model.pkl")
+    PCA_MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+ 
     st.title("🤖 Unsupervised Job Recommendation")
     if st.button("🔙 Back"):
-        st.session_state.page = "main"; st.rerun()
+        st.session_state.page = 'main'; st.rerun()
  
-    # Sidebar for unsupervised inputs
     st.sidebar.header("Worker Profile")
-    w_nm    = st.sidebar.text_input("Name", "John Doe")
-    w_city  = st.sidebar.text_input("City", "Mumbai")
+    w_nm = st.sidebar.text_input("Name", "John Doe")
+    w_city = st.sidebar.text_input("City", "Mumbai")
     w_skill = st.sidebar.text_input("Skills (comma-separated)", "Plumber")
-    w_sal   = st.sidebar.number_input("Monthly Wage (₹)", 0, value=30000)
-    top_n   = st.sidebar.slider("Top N", 1, 20, 5)
+    w_sal = st.sidebar.number_input("Monthly Wage (₹)", 0, value=30000)
+    top_n = st.sidebar.slider("Top N", 1, 20, 5)
     run_btn = st.sidebar.button("Run Unsupervised")
  
     if run_btn:
-        # Prep text
         df_uns = jobs_df.copy()
-        df_uns["Avg_salary"] = (df_uns["Min salary"] + df_uns["Max salary"])/2
-        mean_sal = df_uns.loc[df_uns["Avg_salary"]!=0,"Avg_salary"].mean()
-        df_uns["Avg_salary"].replace(0, mean_sal, inplace=True)
-        df_uns["job_text"] = (df_uns["Job type"] + " role in " + df_uns["State"]
-                              + ". Avg ₹" + df_uns["Avg_salary"].astype(int).astype(str))
+        df_uns['Avg_salary'] = (df_uns['Min salary'] + df_uns['Max salary']) / 2
+        mean_sal = df_uns.loc[df_uns['Avg_salary'] != 0, 'Avg_salary'].mean()
+        df_uns['Avg_salary'].replace(0, mean_sal, inplace=True)
+        df_uns['job_text'] = df_uns['Job type'] + " role in " + df_uns['State'] + ". Avg ₹" + df_uns['Avg_salary'].astype(int).astype(str)
  
-        # Embedding + PCA
-        mdl   = init_model()
-        emb   = mdl.encode(df_uns["job_text"].tolist(), show_progress_bar=False)
-        scaler= MinMaxScaler().fit(emb)
+        mdl = init_model()
+        emb = mdl.encode(df_uns['job_text'].tolist(), show_progress_bar=False)
+        scaler = MinMaxScaler().fit(emb)
         emb_s = scaler.transform(emb)
-        pca  = PCA(n_components=PCA_COMPONENTS, random_state=42)
-        job_pca = pca.fit_transform(emb_s)
  
-        # Cluster
-        best_name, labels = run_tuned_clustering(job_pca)
-        df_uns["cluster"] = labels
-        st.success(f"Best algorithm: {best_name}")
+        # Load or fit PCA
+        if PCA_MODEL_PATH.exists():
+            with open(PCA_MODEL_PATH, 'rb') as f:
+                pca = pickle.load(f)
+        else:
+            pca = PCA(n_components=PCA_COMPONENTS, random_state=42)
+            pca.fit(emb_s)
+            with open(PCA_MODEL_PATH, 'wb') as f:
+                pickle.dump(pca, f)
  
-        # Worker embed + transform
-        skill_texts = [f"{sk.strip()} seeking role in {w_city}" for sk in w_skill.split(",")]
-        skill_emb   = mdl.encode(skill_texts, show_progress_bar=False)
-        emb_w_s     = scaler.transform(skill_emb)
-        w_pca_full  = pca.transform(emb_w_s)
-        w_pca       = w_pca_full.mean(axis=0).reshape(1,-1)
+        job_pca = pca.transform(emb_s)
  
-        # Assign to cluster by nearest job
-        dists      = np.linalg.norm(job_pca - w_pca, axis=1)
-        worker_cl  = int(df_uns.loc[dists.argmin(),"cluster"])
+        # Load or fit clustering model
+        if CLUSTER_MODEL_PATH.exists():
+            with open(CLUSTER_MODEL_PATH, 'rb') as f:
+                clustering_model = pickle.load(f)
+                labels = clustering_model.labels_ if hasattr(clustering_model, "labels_") else clustering_model.predict(job_pca)
+                algo_name = type(clustering_model).__name__
+        else:
+            algo_name, labels = run_tuned_clustering(job_pca)
+            clustering_model = tuned_algorithms[algo_name]
+            clustering_model.fit(job_pca)
+            with open(CLUSTER_MODEL_PATH, 'wb') as f:
+                pickle.dump(clustering_model, f)
+ 
+        df_uns['cluster'] = labels
+        st.success(f"Best algorithm: {algo_name}")
+ 
+        skill_texts = [f"{sk.strip()} seeking role in {w_city}" for sk in w_skill.split(',')]
+        skill_emb = mdl.encode(skill_texts, show_progress_bar=False)
+        emb_w = scaler.transform(skill_emb)
+        w_pca = pca.transform(emb_w).mean(axis=0).reshape(1, -1)
+        dists = np.linalg.norm(job_pca - w_pca, axis=1)
+        worker_cl = int(df_uns.loc[dists.argmin(), 'cluster'])
         st.write(f"Worker assigned to cluster **{worker_cl}**")
- 
-        # Compute semantic similarity
-        worker_emb = skill_emb.mean(axis=0).reshape(1,-1)
-        sims       = cosine_similarity(worker_emb, emb).flatten()
-        df_uns["sim"] = sims
- 
-        # Show top-N in that cluster
-        subset = df_uns[df_uns["cluster"]==worker_cl]
-        top_jobs = subset.nlargest(top_n, "sim")
+        worker_emb = skill_emb.mean(axis=0).reshape(1, -1)
+        sims = cosine_similarity(worker_emb, emb).flatten()
+        df_uns['sim'] = sims
+        subset = df_uns[df_uns['cluster'] == worker_cl]
+        top_jobs = subset.nlargest(top_n, 'sim')
         st.subheader(f"Top {top_n} jobs in cluster {worker_cl}")
         for _, row in top_jobs.iterrows():
-            st.markdown(f"**{row['Company']}**  \n"
-                        f"{row['Job type']} — {row['State']}  \n"
-                        f"Similarity: {row['sim']:.2f}")
+            st.markdown(f"**{row['Company']}**  \n{row['Job type']} — {row['State']}  \nSimilarity: {row['sim']:.2f}")
 
 # --- PAGE: ADMIN VIEW ---
 elif st.session_state.page == 'admin_view' and st.session_state.authenticated:
