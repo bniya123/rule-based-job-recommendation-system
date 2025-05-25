@@ -10,13 +10,4 @@ openai
 plotly
 requests
 geopandas
-openai
 hdbscan
-pickle
-pathlib
-sklearn.mixture
-sklearn.metrics
-sklearn.cluster
-sklearn.preprocessing
-sklearn.decomposition
-sklearn.metrics.pairwise
