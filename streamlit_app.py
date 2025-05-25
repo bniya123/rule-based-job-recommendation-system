@@ -1006,6 +1006,8 @@ FLOW_ID           = "6fdd59ed-0109-491b-8576-3bf4932add58"
 GEOCODE_API_KEY   = "e16212d2c51a4da288bf22c3dced407d"
 CACHE_FILE        = Path("location_cache.csv")
 PCA_COMPONENTS    = 50
+N_CLUSTERS      = 5
+
 tuned_algorithms = {
     "KMeans": KMeans(n_clusters=N_CLUSTERS, random_state=42),
     "DBSCAN": DBSCAN(eps=1.0, min_samples=4),
